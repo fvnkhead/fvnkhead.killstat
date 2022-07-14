@@ -7,7 +7,7 @@
     "ConVars": [
         {
             "Name": "killstat_headers",
-            "DefaultValue": "matchid,gamemode,map,time,playercount,attackerid,attackerweapon,victimid,distance"
+            "DefaultValue": "matchid,gamemode,map,time,playercount,attackername,attackerid,attackerweapon,victimname,victimid,distance"
         },
         {
             "Name": "killstat_custom_parameters",

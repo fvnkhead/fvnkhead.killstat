@@ -11,9 +11,11 @@ array<string> KNOWN_HEADERS = [
     "map",
     "time",
     "playercount",
+    "attackername",
     "attackerid",
     "attackerweapon",
     "victimid",
+    "victimname",
     "distance"
 ]
 
@@ -121,6 +123,10 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
                 values.append(format("%d", GetPlayerArray().len()))
                 break
 
+            case "attackername":
+                values.append(attacker.GetPlayerName())
+                break
+
             case "attackerid":
                 values.append(Anonymize(attacker))
                 break
@@ -128,6 +134,10 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
             case "attackerweapon":
                 int damageSourceId = DamageInfo_GetDamageSourceIdentifier(damageInfo)
                 values.append(DamageSourceIDToString(damageSourceId))
+                break
+
+            case "victimname":
+                values.append(victim.GetPlayerName())
                 break
 
             case "victimid":
