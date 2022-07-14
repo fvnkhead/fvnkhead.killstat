@@ -156,7 +156,11 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
 
             case "victimweapon":
                 entity weapon = victim.GetActiveWeapon()
-                values.append(weapon.GetWeaponClassName())
+                if (weapon != null) {
+                    values.append(weapon.GetWeaponClassName())
+                } else {
+                    values.append("null")
+                }
                 break
 
             case "distance":
