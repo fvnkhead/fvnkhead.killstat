@@ -6,6 +6,7 @@ struct Parameter {
 }
 
 array<string> KNOWN_HEADERS = [
+    "killstatversion",
     "matchid",
     "gamemode",
     "map",
@@ -16,10 +17,13 @@ array<string> KNOWN_HEADERS = [
     "attackerweapon",
     "victimid",
     "victimname",
+    "victimweapon",
     "distance"
 ]
 
 struct {
+    string killstatVersion
+
     array<string> headers
     array<Parameter> customParameters
 
@@ -29,6 +33,8 @@ struct {
 } file
 
 void function killstat_Init() {
+    file.killstatVersion = GetConVarString("killstat_version")
+
     // headers
     file.headers = []
     string headerString = GetConVarString("killstat_headers")
@@ -103,6 +109,10 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
 
     foreach (string header in file.headers) {
         switch (header) {
+            case "killstatversion":
+                values.append(file.killstatVersion)
+                break
+
             case "matchid":
                 values.append(format("%08x", file.matchId))
                 break
@@ -142,6 +152,11 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
 
             case "victimid":
                 values.append(Anonymize(victim))
+                break
+
+            case "victimweapon":
+                entity weapon = victim.GetActiveWeapon()
+                values.append(weapon.GetWeaponClassName())
                 break
 
             case "distance":
