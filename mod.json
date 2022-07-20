@@ -1,17 +1,13 @@
 {
     "Name": "fvnkhead.killstat",
     "Description": "gather kill statistics",
-    "Version": "1.1.0",
+    "Version": "1.1.1",
     "LoadPriority": 1,
     "RequiredOnClient": false,
     "ConVars": [
         {
             "Name": "killstat_version",
-            "DefaultValue": "ks_1.1.0"
-        },
-        {
-            "Name": "killstat_headers",
-            "DefaultValue": "killstatversion,matchid,gamemode,map,time,playercount,attackername,attackerid,attackerweapon,victimname,victimid,victimweapon,distance"
+            "DefaultValue": "ks_1.1.1"
         },
         {
             "Name": "killstat_custom_parameters",
