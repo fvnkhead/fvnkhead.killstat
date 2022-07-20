@@ -7,7 +7,7 @@
     "ConVars": [
         {
             "Name": "killstat_version",
-            "DefaultValue": "ks_2.0.0"
+            "DefaultValue": "ks_testing"
         },
         {
             "Name": "killstat_custom_parameters",
