@@ -10,10 +10,13 @@ array<string> HEADERS = [
     "match_id",
     "game_mode",
     "map",
-    "time",
+    "unix_time",
+    "game_time",
     "player_count",
     "attacker_name",
     "attacker_id",
+    "attacker_current_weapon",
+    "attacker_current_weapon_mods",
     "attacker_weapon_1",
     "attacker_weapon_1_mods",
     "attacker_weapon_2",
@@ -25,6 +28,8 @@ array<string> HEADERS = [
     "attacker_offhand_weapon_3",
     "victim_name",
     "victim_id",
+    "victim_current_weapon",
+    "victim_current_weapon_mods",
     "victim_weapon_1",
     "victim_weapon_1_mods",
     "victim_weapon_2",
@@ -94,6 +99,31 @@ void function killstat_Init() {
     AddCallback_GameStateEnter(eGameState.Postmatch, killstat_End)
 }
 
+entity function GetNthWeapon(array<entity> weapons, int index) {
+    return index < weapons.len() ? weapons[index] : null
+}
+
+void function AddWeapon(array<string> list, entity weapon) {
+    string s = "null"
+    if (weapon != null) {
+        s = weapon.GetWeaponClassName()
+    }
+    list.append(s)
+}
+
+void function AddWeaponMods(array<string> list, entity weapon) {
+    array<string> quotedMods = []
+    if (weapon != null) {
+        foreach (string mod in WEAPON_MODS) {
+            if(weapon.HasMod(mod)) {
+                quotedMods.append(format("'%s'", mod))
+            }
+        }
+    }
+    string cell = "\"[" + join(quotedMods, ", ") + "]\""
+    list.append(cell)
+}
+
 Parameter function NewParameter(string name, string value) {
     Parameter p
     p.name = name
@@ -135,18 +165,18 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
     array<entity> attackerOffhandWeapons = attacker.GetOffhandWeapons()
     array<entity> victimOffhandWeapons = victim.GetOffhandWeapons()
 
-    entity aw1 = attackerWeapons.len() >= 1 ? attackerWeapons[0] : null
-    entity aw2 = attackerWeapons.len() >= 2 ? attackerWeapons[1] : null
-    entity aw3 = attackerWeapons.len() >= 3 ? attackerWeapons[2] : null
-    entity vw1 = victimWeapons.len() >= 1 ? victimWeapons[0] : null
-    entity vw2 = victimWeapons.len() >= 2 ? victimWeapons[1] : null
-    entity vw3 = victimWeapons.len() >= 3 ? victimWeapons[2] : null
-    entity aow1 = attackerOffhandWeapons.len() >= 1 ? attackerOffhandWeapons[0] : null
-    entity aow2 = attackerOffhandWeapons.len() >= 2 ? attackerOffhandWeapons[1] : null
-    entity aow3 = attackerOffhandWeapons.len() >= 3 ? attackerOffhandWeapons[2] : null
-    entity vow1 = victimOffhandWeapons.len() >= 1 ? victimOffhandWeapons[0] : null
-    entity vow2 = victimOffhandWeapons.len() >= 2 ? victimOffhandWeapons[1] : null
-    entity vow3 = victimOffhandWeapons.len() >= 3 ? victimOffhandWeapons[2] : null
+    entity aw1 = GetNthWeapon(attackerWeapons, 0)
+    entity aw2 = GetNthWeapon(attackerWeapons, 1)
+    entity aw3 = GetNthWeapon(attackerWeapons, 2)
+    entity vw1 = GetNthWeapon(victimWeapons, 0)
+    entity vw2 = GetNthWeapon(victimWeapons, 1)
+    entity vw3 = GetNthWeapon(victimWeapons, 2)
+    entity aow1 = GetNthWeapon(attackerOffhandWeapons, 0)
+    entity aow2 = GetNthWeapon(attackerOffhandWeapons, 1)
+    entity aow3 = GetNthWeapon(attackerOffhandWeapons, 2)
+    entity vow1 = GetNthWeapon(victimOffhandWeapons, 0)
+    entity vow2 = GetNthWeapon(victimOffhandWeapons, 1)
+    entity vow3 = GetNthWeapon(victimOffhandWeapons, 2)
 
 
     foreach (string header in file.headers) {
@@ -167,7 +197,11 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
                 values.append(file.map)
                 break
 
-            case "time":
+            case "unix_time":
+                values.append(format("%d", GetUnixTimestamp()))
+                break
+
+            case "game_time":
                 values.append(format("%.2f", Time()))
                 break
 
@@ -183,103 +217,50 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
                 values.append(Anonymize(attacker))
                 break
 
+            case "attacker_current_weapon":
+                AddWeapon(values, attacker.GetLatestPrimaryWeapon())
+                break
+
+            case "attacker_current_weapon_mods":
+                AddWeaponMods(values, attacker.GetLatestPrimaryWeapon())
+                break
+
             case "attacker_weapon_1":
-                if (aw1 != null) {
-                    values.append(aw1.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, aw1)
                 break
 
             case "attacker_weapon_1_mods":
-                array<string> quotedMods = []
-                if (aw1 != null) {
-                    foreach (string mod in WEAPON_MODS) {
-                        if(aw1.HasMod(mod)) {
-                            quotedMods.append(format("'%s'", mod))
-                        }
-                    }
-                    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-                    values.append(cell)
-                }
-                else {
-                    values.append("null")
-                }
+                AddWeaponMods(values, aw1)
                 break
             
             case "attacker_weapon_2":
-                if (aw2 != null) {
-                    values.append(aw2.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, aw2)
                 break
 
             case "attacker_weapon_2_mods":
-                array<string> quotedMods = []
-                if (aw2 != null) {
-                    foreach (string mod in WEAPON_MODS) {
-                        if(aw2.HasMod(mod)) {
-                            quotedMods.append(format("'%s'", mod))
-                        }
-                    }
-                    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-                    values.append(cell)
-                }
-                else {
-                    values.append("null")
-                }
+                AddWeaponMods(values, aw2)
                 break
 
             case "attacker_weapon_3":
-                if (aw3 != null) {
-                    values.append(aw3.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, aw3)
                 break
 
             case "attacker_weapon_3_mods":
-                array<string> quotedMods = []
-                if (aw3 != null) {
-                    foreach (string mod in WEAPON_MODS) {
-                        if(aw3.HasMod(mod)) {
-                            quotedMods.append(format("'%s'", mod))
-                        }
-                    }
-                    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-                    values.append(cell)
-                }
-                else {
-                    values.append("null")
-                }
+                AddWeaponMods(values, aw3)
                 break
 
             case "attacker_offhand_weapon_1":
-                if (aow1 != null) {
-                    values.append(aow1.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, aow1)
                 break
 
             case "attacker_offhand_weapon_2":
-                if (aow2 != null) {
-                    values.append(aow2.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, aow2)
                 break
 
             case "attacker_offhand_weapon_3":
-                if (aow3 != null) {
-                    values.append(aow3.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, aow3)
                 break
                 
-
             case "victim_name":
                 values.append(victim.GetPlayerName())
                 break
@@ -288,102 +269,49 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
                 values.append(Anonymize(victim))
                 break
 
+            case "victim_current_weapon":
+                AddWeapon(values, victim.GetLatestPrimaryWeapon())
+                break
+
+            case "victim_current_weapon_mods":
+                AddWeaponMods(values, victim.GetLatestPrimaryWeapon())
+                break
+
             case "victim_weapon_1":
-                if (vw1 != null) {
-                    values.append(vw1.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, vw1)
                 break
 
             case "victim_weapon_1_mods":
-                array<string> quotedMods = []
-                if (vw1 != null) {
-                    foreach (string mod in WEAPON_MODS) {
-                        if(vw1.HasMod(mod)) {
-                            quotedMods.append(format("'%s'", mod))
-                        }
-                    }
-                    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-                    values.append(cell)
-                }
-                else {
-                    values.append("null")
-                }
+                AddWeaponMods(values, vw1)
                 break
 
             case "victim_weapon_2":
-                if (vw2 != null) {
-                    values.append(vw2.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, vw2)
                 break
 
             case "victim_weapon_2_mods":
-                array<string> quotedMods = []
-                if (vw2 != null) {
-                    foreach (string mod in WEAPON_MODS) {
-                        if(vw2.HasMod(mod)) {
-                            quotedMods.append(format("'%s'", mod))
-                        }
-                    }
-                    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-                    values.append(cell)
-                }
-                else {
-                    values.append("null")
-                }
+                AddWeaponMods(values, vw2)
                 break
 
                 case "victim_weapon_3":
-                if (vw3 != null) {
-                    values.append(vw3.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, vw3)
                 break
 
             case "victim_weapon_3_mods":
-                array<string> quotedMods = []
-                if (vw3 != null) {
-                    foreach (string mod in WEAPON_MODS) {
-                        if(vw3.HasMod(mod)) {
-                            quotedMods.append(format("'%s'", mod))
-                        }
-                    }
-                    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-                    values.append(cell)
-                }
-                else {
-                    values.append("null")
-                }
+                AddWeaponMods(values, vw3)
                 break
 
             case "victim_offhand_weapon_1":
-                if (vow1 != null) {
-                    values.append(vow1.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, vow1)
                 break
 
             case "victim_offhand_weapon_2":
-                if (vow2 != null) {
-                    values.append(vow2.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, vow2)
                 break
 
             case "victim_offhand_weapon_3":
-                if (vow3 != null) {
-                    values.append(vow3.GetWeaponClassName())
-                } else {
-                    values.append("null")
-                }
+                AddWeapon(values, vow3)
                 break
-
 
             case "cause_of_death":
                 int damageSourceId = DamageInfo_GetDamageSourceIdentifier(damageInfo)
