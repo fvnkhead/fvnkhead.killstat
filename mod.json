@@ -1,13 +1,13 @@
 {
     "Name": "fvnkhead.killstat",
     "Description": "gather kill statistics",
-    "Version": "test_2.0.0",
+    "Version": "testing",
     "LoadPriority": 1,
     "RequiredOnClient": false,
     "ConVars": [
         {
             "Name": "killstat_version",
-            "DefaultValue": "ks_test_2.0.0"
+            "DefaultValue": "ks_testing"
         },
         {
             "Name": "killstat_custom_parameters",
