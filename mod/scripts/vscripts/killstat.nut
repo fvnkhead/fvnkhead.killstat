@@ -43,24 +43,6 @@ array<string> HEADERS = [
     "distance"
 ]
 
-array<string> WEAPON_MODS = [
-    "iron_sights",
-    "holosight",
-    "redline_sight",
-    "threat_scope",
-    "scope_4x",
-    "smart_lock",
-    "pro_screen",
-    "pas_fast_reload",
-    "extended_ammo",
-    "pas_fast_ads",
-    "pas_fast_swap",
-    "pas_run_and_gun",
-    "tactical_cdr_on_kill",
-    "ricochet"
-    "quick_charge"
-]
-
 struct {
     string killstatVersion
 
@@ -97,31 +79,6 @@ void function killstat_Init() {
     AddCallback_GameStateEnter(eGameState.Playing, killstat_Begin)
     AddCallback_OnPlayerKilled(killstat_Record)
     AddCallback_GameStateEnter(eGameState.Postmatch, killstat_End)
-}
-
-entity function GetNthWeapon(array<entity> weapons, int index) {
-    return index < weapons.len() ? weapons[index] : null
-}
-
-void function AddWeapon(array<string> list, entity weapon) {
-    string s = "null"
-    if (weapon != null) {
-        s = weapon.GetWeaponClassName()
-    }
-    list.append(s)
-}
-
-void function AddWeaponMods(array<string> list, entity weapon) {
-    array<string> quotedMods = []
-    if (weapon != null) {
-        foreach (string mod in WEAPON_MODS) {
-            if(weapon.HasMod(mod)) {
-                quotedMods.append(format("'%s'", mod))
-            }
-        }
-    }
-    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-    list.append(cell)
 }
 
 Parameter function NewParameter(string name, string value) {
@@ -164,6 +121,9 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
     array<entity> victimWeapons = victim.GetMainWeapons()
     array<entity> attackerOffhandWeapons = attacker.GetOffhandWeapons()
     array<entity> victimOffhandWeapons = victim.GetOffhandWeapons()
+
+    attackerWeapons.sort(MainWeaponSort)
+    victimWeapons.sort(MainWeaponSort)
 
     entity aw1 = GetNthWeapon(attackerWeapons, 0)
     entity aw2 = GetNthWeapon(attackerWeapons, 1)
@@ -338,6 +298,101 @@ void function killstat_End() {
 
 void function Log(string s) {
      print("[fvnkhead.killstat] " + s)
+}
+
+array<int> MAIN_DAMAGE_SOURCES = [
+    // primaries
+	eDamageSourceId.mp_weapon_car,
+	eDamageSourceId.mp_weapon_r97,
+	eDamageSourceId.mp_weapon_alternator_smg,
+	eDamageSourceId.mp_weapon_hemlok_smg,
+	eDamageSourceId.mp_weapon_hemlok,
+	eDamageSourceId.mp_weapon_vinson,
+	eDamageSourceId.mp_weapon_g2,
+	eDamageSourceId.mp_weapon_rspn101,
+	eDamageSourceId.mp_weapon_rspn101_og,
+	eDamageSourceId.mp_weapon_esaw,
+	eDamageSourceId.mp_weapon_lstar,
+	eDamageSourceId.mp_weapon_lmg,
+	eDamageSourceId.mp_weapon_shotgun,
+	eDamageSourceId.mp_weapon_mastiff,
+	eDamageSourceId.mp_weapon_dmr,
+	eDamageSourceId.mp_weapon_sniper,
+	eDamageSourceId.mp_weapon_doubletake,
+	eDamageSourceId.mp_weapon_pulse_lmg,
+	eDamageSourceId.mp_weapon_smr,
+	eDamageSourceId.mp_weapon_softball,
+	eDamageSourceId.mp_weapon_epg,
+	eDamageSourceId.mp_weapon_shotgun_pistol,
+	eDamageSourceId.mp_weapon_wingman_n,
+
+    // secondaries
+	eDamageSourceId.mp_weapon_smart_pistol,
+	eDamageSourceId.mp_weapon_wingman,
+	eDamageSourceId.mp_weapon_semipistol,
+	eDamageSourceId.mp_weapon_autopistol,
+
+    // anti-titan
+	eDamageSourceId.mp_weapon_mgl,
+	eDamageSourceId.mp_weapon_rocket_launcher,
+	eDamageSourceId.mp_weapon_arc_launcher,
+	eDamageSourceId.mp_weapon_defender
+]
+
+// Should sort main weapons in following order:
+// 1. primary
+// 2. secondary
+// 3. anti-titan
+int function MainWeaponSort(entity a, entity b) {
+    int aID = a.GetDamageSourceID()
+    int bID = b.GetDamageSourceID()
+
+    int aIdx = MAIN_DAMAGE_SOURCES.find(aID)
+    int bIdx = MAIN_DAMAGE_SOURCES.find(bID)
+
+    if (aIdx == bIdx) {
+        return 0
+    } else if (aIdx != -1 && bIdx == -1) {
+        return -1
+    } else if (aIdx == -1 && bIdx != -1) {
+        return 1
+    }
+
+    return aIdx < bIdx ? -1 : 1
+}
+
+int function WeaponNameSort(entity a, entity b) {
+    return SortStringAlphabetize(a.GetWeaponClassName(), b.GetWeaponClassName())
+}
+
+entity function GetNthWeapon(array<entity> weapons, int index) {
+    return index < weapons.len() ? weapons[index] : null
+}
+
+void function AddWeapon(array<string> list, entity weapon) {
+    string s = "null"
+    if (weapon != null) {
+        s = weapon.GetWeaponClassName()
+    }
+    list.append(s)
+}
+
+void function AddWeaponMods(array<string> list, entity weapon) {
+    if (weapon == null) {
+        list.append("null")
+        return
+    }
+
+    array<string> mods = weapon.GetMods()
+    mods.sort()
+
+    array<string> quotedMods = []
+    foreach (string mod in mods) {
+        quotedMods.append("'" + mod + "'")
+    }
+
+    string cell = "\"[" + join(quotedMods, ", ") + "]\""
+    list.append(cell)
 }
 
 string function Anonymize(entity player) {
