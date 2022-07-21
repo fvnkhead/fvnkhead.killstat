@@ -91,7 +91,7 @@ Parameter function NewParameter(string name, string value) {
 void function killstat_Begin() {
     file.matchId = RandomInt(2000000000)
     file.gameMode = GameRules_GetGameMode()
-    file.map = GetMapName()
+    file.map = StringReplace(GetMapName(), "mp_", "")
 
     array<string> headers = []
     foreach (Parameter p in file.customParameters) {
@@ -275,7 +275,8 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
 
             case "cause_of_death":
                 int damageSourceId = DamageInfo_GetDamageSourceIdentifier(damageInfo)
-                values.append(DamageSourceIDToString(damageSourceId))
+                string damageName = DamageSourceIDToString(damageSourceId)
+                values.append(TrimWeaponName(damageName))
                 break
 
             case "distance":
@@ -372,9 +373,17 @@ entity function GetNthWeapon(array<entity> weapons, int index) {
 void function AddWeapon(array<string> list, entity weapon) {
     string s = "null"
     if (weapon != null) {
-        s = weapon.GetWeaponClassName()
+        s = TrimWeaponName(weapon.GetWeaponClassName())
     }
+
     list.append(s)
+}
+
+string function TrimWeaponName(string s) {
+    s = StringReplace(s, "mp_weapon_", "")
+    s = StringReplace(s, "mp_ability_", "")
+    s = StringReplace(s, "melee_", "")
+    return s
 }
 
 void function AddWeaponMods(array<string> list, entity weapon) {
