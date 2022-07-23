@@ -25,7 +25,7 @@ array<string> HEADERS = [
     "attacker_weapon_3_mods",
     "attacker_offhand_weapon_1",
     "attacker_offhand_weapon_2",
-    "attacker_offhand_weapon_3",
+    //"attacker_offhand_weapon_3", always melee
     "victim_name",
     "victim_id",
     "victim_current_weapon",
@@ -38,7 +38,7 @@ array<string> HEADERS = [
     "victim_weapon_3_mods",
     "victim_offhand_weapon_1",
     "victim_offhand_weapon_2",
-    "victim_offhand_weapon_3",
+    // "victim_offhand_weapon_3", always melee
     "cause_of_death",
     "distance"
 ]
@@ -89,6 +89,8 @@ Parameter function NewParameter(string name, string value) {
 }
 
 void function killstat_Begin() {
+    //DumpWeaponModBitFields()
+
     file.matchId = RandomInt(2000000000)
     file.gameMode = GameRules_GetGameMode()
     file.map = StringReplace(GetMapName(), "mp_", "")
@@ -340,6 +342,20 @@ array<int> MAIN_DAMAGE_SOURCES = [
 	eDamageSourceId.mp_weapon_defender
 ]
 
+void function DumpWeaponModBitFields() {
+    Log("[DumpWeaponModBitFields]")
+    foreach (int damageSourceId in MAIN_DAMAGE_SOURCES) {
+        string weaponName = DamageSourceIDToString(damageSourceId)
+        array<string> mods = GetWeaponMods_Global(weaponName)
+        array<string> list = [weaponName]
+        foreach (string mod in mods) {
+            list.append(mod)
+        }
+
+        Log("[DumpWeaponModBitFields] " + ToPythonList(list))
+    }
+}
+
 // Should sort main weapons in following order:
 // 1. primary
 // 2. secondary
@@ -392,16 +408,17 @@ void function AddWeaponMods(array<string> list, entity weapon) {
         return
     }
 
-    array<string> mods = weapon.GetMods()
-    mods.sort()
+    int modBits = weapon.GetModBitField()
+    list.append(format("%d", modBits))
+}
 
-    array<string> quotedMods = []
-    foreach (string mod in mods) {
-        quotedMods.append("'" + mod + "'")
+string function ToPythonList(array<string> list) {
+    array<string> quoted = []
+    foreach (string s in list) {
+        quoted.append("'" + s + "'")
     }
 
-    string cell = "\"[" + join(quotedMods, ", ") + "]\""
-    list.append(cell)
+    return "\"[" + join(quoted, ", ") + "]\""
 }
 
 string function Anonymize(entity player) {
