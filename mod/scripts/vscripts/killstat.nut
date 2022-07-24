@@ -164,7 +164,7 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
                 break
 
             case "game_time":
-                values.append(format("%.2f", Time()))
+                values.append(format("%.3f", Time()))
                 break
 
             case "player_count":
@@ -283,7 +283,7 @@ void function killstat_Record(entity victim, entity attacker, var damageInfo) {
 
             case "distance":
                 float dist = Distance(attacker.GetOrigin(), victim.GetOrigin())
-                values.append(format("%.2f", dist))
+                values.append(format("%.3f", dist))
                 break
 
             default:
